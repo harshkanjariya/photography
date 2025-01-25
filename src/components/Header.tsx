@@ -33,11 +33,10 @@ const Header: React.FC = () => {
       <nav className={`nav ${isMenuVisible ? 'showing' : ''}`}>
         <span className="menu-title">menu</span>
         <ul>
-          <li><a href="/">home</a></li>
-          <li><a href="/about">about me</a></li>
-          <li><a href="/photos">photo gallery</a></li>
-          <li><a href="/videos">video gallery</a></li>
-          <li><a href="/contact">contact</a></li>
+          <li><a href="/photography/">home</a></li>
+          <li><a href="/photography/about">about me</a></li>
+          <li><a href="/photography/photos">photo gallery</a></li>
+          <li><a href="/photography/contact">contact</a></li>
         </ul>
         <ul>
           <li>facebook</li>

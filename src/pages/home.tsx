@@ -5,7 +5,7 @@ import {ArrowBack, ArrowForward, Search} from "@mui/icons-material";
 
 const imageData = [
   {
-    path: "/preview/img1.jpg",
+    path: "/photography/preview/img1.jpg",
     title: "Sunset Over the Ocean",
     photographer: "John Doe",
     date: "2024-01-18",
@@ -13,7 +13,7 @@ const imageData = [
     description: "A beautiful view of the sunset over the ocean horizon.",
   },
   {
-    path: "/preview/img2.jpg",
+    path: "/photography/preview/img2.jpg",
     title: "Mountain Adventure",
     photographer: "Jane Smith",
     date: "2023-12-05",
@@ -21,7 +21,7 @@ const imageData = [
     description: "A thrilling hike in the Swiss Alps.",
   },
   {
-    path: "/preview/img3.jpg",
+    path: "/photography/preview/img3.jpg",
     title: "City Lights",
     photographer: "Emily Brown",
     date: "2023-11-15",
@@ -29,7 +29,7 @@ const imageData = [
     description: "A stunning view of the city skyline at night.",
   },
   {
-    path: "/preview/img4.jpg",
+    path: "/photography/preview/img4.jpg",
     title: "Forest Retreat",
     photographer: "Michael Lee",
     date: "2023-10-22",
@@ -51,7 +51,7 @@ export function Home() {
             imagesState.current === imagesState.target ? 0 : 0.5
           );
           const style = {
-            opacity: page,
+            ...(imagesState.isSearch ? {} : {opacity: page}),
             backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5),rgba(0, 0, 0, 0.5)),url('${image.path}')`,
             ...(index === 0 ? {} : {
               top: image.transform.top,
@@ -60,7 +60,20 @@ export function Home() {
             }),
           };
           return (
-            <div className="page" key={index} style={style}>
+            <div
+              className={"page " + (imagesState.isSearch ? "hover-opacity" : "")}
+              key={index}
+              style={style}
+              onClick={
+                imagesState.isSearch ? () => {
+                  setImagesState({
+                    ...imagesState,
+                    isSearch: false,
+                    isMid: true,
+                    target: index,
+                  })
+                } : undefined
+              }>
               <div className={"description " + (index === imagesState.current ? "" : "hidden")}>
                 <div className="line"><span>Photo Title:</span> {image.title}</div>
                 <div className="line"><span>Photographer:</span> {image.photographer}</div>

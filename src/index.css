@@ -8,3 +8,11 @@ body, #root {
   overflow: hidden;
   font-family: 'Montserrat', sans-serif;
 }
+
+.hover-opacity {
+  opacity: 0.5;
+}
+
+.hover-opacity:hover {
+  opacity: 1;
+}

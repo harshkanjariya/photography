@@ -15,6 +15,7 @@ const usePhoto3D = (imagePaths: any[]) => {
     current: 0,
     target: 0,
     isSearch: false,
+    isMid: false,
   });
 
   useEffect(() => {
@@ -34,7 +35,7 @@ const usePhoto3D = (imagePaths: any[]) => {
   }, [imagePaths]);
 
   useEffect(() => {
-    if (imagesState.current !== imagesState.target) {
+    if (imagesState.current !== imagesState.target || imagesState.isMid) {
       animatePage();
     }
   }, [imagesState]);
@@ -56,25 +57,25 @@ const usePhoto3D = (imagePaths: any[]) => {
   function animatePage() {
     const ref = mainDivRef.current;
     if (!ref) return;
-    const {transform} = imageTransforms[imagesState.target];
+    const {transform} = imageTransforms[imagesState.isSearch ? imagesState.current : imagesState.target];
     const xy = rotate(transform.rotate, [transform.left, transform.top]);
 
-    if (!imagesState.isSearch) {
+    if (!imagesState.isMid) {
       ref.style.transform = `translate3d(${-xy[0]}px, ${-xy[1]}px, ${-maxZoom}px) rotate(${-transform.rotate}deg)`;
     } else {
       ref.style.transform = `translate3d(${-xy[0]}px, ${-xy[1]}px, ${-transform.z}px) rotate(${-transform.rotate}deg)`;
       setImagesState({
         ...imagesState,
         current: imagesState.target,
-        isSearch: false,
+        isMid: false,
       });
     }
 
-    if (!imagesState.isSearch) {
+    if (!imagesState.isMid && !imagesState.isSearch) {
       setTimeout(() => {
         setImagesState({
           ...imagesState,
-          isSearch: true,
+          isMid: true,
         });
       }, 1000);
     }
@@ -99,6 +100,7 @@ const usePhoto3D = (imagePaths: any[]) => {
   const search = () => {
     setImagesState({
       ...imagesState,
+      target: -1,
       isSearch: true,
     });
   };
