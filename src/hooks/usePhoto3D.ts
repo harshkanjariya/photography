@@ -17,6 +17,15 @@ const usePhoto3D = (imagePaths: any[]) => {
     isSearch: false,
     isMid: false,
   });
+  const [dragState, setDragState] = useState({
+    isDragging: false,
+    startX: 0,
+    startY: 0,
+    currentX: 0,
+    currentY: 0,
+    accumulatedX: 0,
+    accumulatedY: 0,
+  });
 
   useEffect(() => {
     const transforms = imagePaths.map((details, index) => {
@@ -40,6 +49,7 @@ const usePhoto3D = (imagePaths: any[]) => {
     }
   }, [imagesState]);
 
+
   const randomTransform = () => {
     const randomTop = Math.round(Math.random() * window.innerWidth * 2) - window.innerWidth;
     const randomLeft = Math.round(Math.random() * window.innerHeight * 2) - window.innerHeight;
@@ -60,10 +70,14 @@ const usePhoto3D = (imagePaths: any[]) => {
     const {transform} = imageTransforms[imagesState.isSearch ? imagesState.current : imagesState.target];
     const xy = rotate(transform.rotate, [transform.left, transform.top]);
 
+    // Apply accumulated drag offset only in search mode (like legacy code)
+    const dragOffsetX = imagesState.isSearch ? dragState.accumulatedX : 0;
+    const dragOffsetY = imagesState.isSearch ? dragState.accumulatedY : 0;
+
     if (!imagesState.isMid) {
-      ref.style.transform = `translate3d(${-xy[0]}px, ${-xy[1]}px, ${-maxZoom}px) rotate(${-transform.rotate}deg)`;
+      ref.style.transform = `translate3d(${-xy[0] + dragOffsetX}px, ${-xy[1] + dragOffsetY}px, ${-maxZoom}px) rotate(${-transform.rotate}deg)`;
     } else {
-      ref.style.transform = `translate3d(${-xy[0]}px, ${-xy[1]}px, ${-transform.z}px) rotate(${-transform.rotate}deg)`;
+      ref.style.transform = `translate3d(${-xy[0] + dragOffsetX}px, ${-xy[1] + dragOffsetY}px, ${-transform.z}px) rotate(${-transform.rotate}deg)`;
       setImagesState({
         ...imagesState,
         current: imagesState.target,
@@ -114,14 +128,161 @@ const usePhoto3D = (imagePaths: any[]) => {
       }
     };
 
-    // Add event listener for keydown event
-    window.addEventListener('keydown', handleKeyDown);
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault(); // Prevent default scroll behavior
+      if (event.deltaY < 0) {
+        next(); // Scroll up triggers next (same as arrow right)
+      } else if (event.deltaY > 0) {
+        previous(); // Scroll down triggers previous (same as arrow left)
+      }
+    };
 
-    // Cleanup event listener on component unmount
+    // Drag handlers for search mode - work like legacy code
+    const handleMouseDown = (event: MouseEvent) => {
+      if (!imagesState.isSearch) return;
+      // Only handle drag if clicking on the main-photodiv or its children
+      if (mainDivRef.current && mainDivRef.current.contains(event.target as Node)) {
+        event.preventDefault();
+        // Disable transitions during drag (like legacy code)
+        if (mainDivRef.current) {
+          mainDivRef.current.style.transition = '0s';
+        }
+        setDragState({
+          isDragging: true,
+          startX: event.clientX,
+          startY: event.clientY,
+          currentX: event.clientX,
+          currentY: event.clientY,
+          accumulatedX: dragState.accumulatedX,
+          accumulatedY: dragState.accumulatedY,
+        });
+      }
+    };
+
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!dragState.isDragging || !imagesState.isSearch) return;
+      event.preventDefault();
+      
+      // Calculate movement delta and accumulate it (like legacy code)
+      const deltaX = event.clientX - dragState.currentX;
+      const deltaY = event.clientY - dragState.currentY;
+      
+      setDragState(prev => ({
+        ...prev,
+        currentX: event.clientX,
+        currentY: event.clientY,
+        accumulatedX: prev.accumulatedX + deltaX,
+        accumulatedY: prev.accumulatedY + deltaY,
+      }));
+      
+      // Apply transform immediately (like legacy code)
+      const ref = mainDivRef.current;
+      if (ref && imagesState.isSearch) {
+        const {transform} = imageTransforms[imagesState.current];
+        const xy = rotate(transform.rotate, [transform.left, transform.top]);
+        const newAccumulatedX = dragState.accumulatedX + deltaX;
+        const newAccumulatedY = dragState.accumulatedY + deltaY;
+        ref.style.transform = `translate3d(${-xy[0] + newAccumulatedX}px, ${-xy[1] + newAccumulatedY}px, ${-maxZoom}px) rotate(${-transform.rotate}deg)`;
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (!dragState.isDragging) return;
+      // Re-enable transitions after drag (like legacy code)
+      if (mainDivRef.current) {
+        mainDivRef.current.style.transition = '1s';
+      }
+      setDragState(prev => ({
+        ...prev,
+        isDragging: false,
+      }));
+    };
+
+    // Touch handlers for mobile devices - work like legacy code
+    const handleTouchStart = (event: TouchEvent) => {
+      if (!imagesState.isSearch) return;
+      // Only handle drag if touching the main-photodiv or its children
+      if (mainDivRef.current && mainDivRef.current.contains(event.target as Node)) {
+        event.preventDefault();
+        const touch = event.touches[0];
+        // Disable transitions during drag (like legacy code)
+        if (mainDivRef.current) {
+          mainDivRef.current.style.transition = '0s';
+        }
+        setDragState({
+          isDragging: true,
+          startX: touch.clientX,
+          startY: touch.clientY,
+          currentX: touch.clientX,
+          currentY: touch.clientY,
+          accumulatedX: dragState.accumulatedX,
+          accumulatedY: dragState.accumulatedY,
+        });
+      }
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (!dragState.isDragging || !imagesState.isSearch) return;
+      event.preventDefault();
+      const touch = event.touches[0];
+      
+      // Calculate movement delta and accumulate it (like legacy code)
+      const deltaX = touch.clientX - dragState.currentX;
+      const deltaY = touch.clientY - dragState.currentY;
+      
+      setDragState(prev => ({
+        ...prev,
+        currentX: touch.clientX,
+        currentY: touch.clientY,
+        accumulatedX: prev.accumulatedX + deltaX,
+        accumulatedY: prev.accumulatedY + deltaY,
+      }));
+      
+      // Apply transform immediately (like legacy code)
+      const ref = mainDivRef.current;
+      if (ref && imagesState.isSearch) {
+        const {transform} = imageTransforms[imagesState.current];
+        const xy = rotate(transform.rotate, [transform.left, transform.top]);
+        const newAccumulatedX = dragState.accumulatedX + deltaX;
+        const newAccumulatedY = dragState.accumulatedY + deltaY;
+        ref.style.transform = `translate3d(${-xy[0] + newAccumulatedX}px, ${-xy[1] + newAccumulatedY}px, ${-maxZoom}px) rotate(${-transform.rotate}deg)`;
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (!dragState.isDragging) return;
+      // Re-enable transitions after drag (like legacy code)
+      if (mainDivRef.current) {
+        mainDivRef.current.style.transition = '1s';
+      }
+      setDragState(prev => ({
+        ...prev,
+        isDragging: false,
+      }));
+    };
+
+    // Add event listeners
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchstart', handleTouchStart, { passive: false });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
+
+    // Cleanup event listeners on component unmount
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [imagePaths, imageTransforms, imagesState]);
+  }, [imagePaths, imageTransforms, imagesState, dragState]);
 
   return {
     next,
